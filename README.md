@@ -117,7 +117,7 @@ Further investigation revealed:
 
 Unexpected finding:
 
-**Cancelled appointments generated more revenue than completed appointments.**
+**Cancelled appointments were associated with higher billed amounts than completed appointments.**
 
 Possible explanation:
 
@@ -180,7 +180,7 @@ Highest revenue per appointment:
 | D007 | 3089 |
 | D006 | 2899 |
 
-Doctor D008 generated the highest revenue efficiency.
+Doctor D008 recorded the highest billed revenue per appointment.
 
 ---
 
