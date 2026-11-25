@@ -10,7 +10,7 @@ CREATE TABLE doctors (
     phone_number varchar (30),
     years_experience int,
     hospital_branch varchar (50),
-    email varchar (40)
+    email varchar (225)
 );
 
 
@@ -18,19 +18,19 @@ CREATE TABLE patients (
 	patient_id varchar (25) primary key,
     first_name varchar (50),
     last_name varchar (50),
-    gender varchar (5),
+    gender varchar (10),
     date_of_birth date,
     contact_number varchar (30),
     address varchar (80),
     registration_date date,
     insurance_provider varchar (50),
     insurance_number varchar (50),
-    email varchar (40)
+    email varchar (255)
     );
     
     CREATE TABLE appointments (
 	appointment_id varchar (50) primary key,
-    patient_id varchar (50),
+    patient_id varchar (25),
     doctor_id varchar (25),
     appointment_date date,
     appointment_time time,
@@ -54,7 +54,7 @@ CREATE TABLE treatments (
 
 CREATE TABLE billing (
 	bill_id varchar (50) primary key,
-    patient_id varchar (50),
+    patient_id varchar (25),
     treatment_id varchar (50),
     bill_date date,
     amount decimal (10,2),
@@ -73,14 +73,14 @@ ORDER BY total_appointments DESC;
 -- Doctors D005, D001, and D006 carry the highest appointment workload.
 
 -- Which treatment types generate most revenue?
-SELECT t.treatment_type, SUM(b.amount) AS revenue
+SELECT t.treatment_type, SUM(b.amount) AS total_billed_amount
 FROM treatments t
 JOIN billing b
 ON t.treatment_id = b.treatment_id
 GROUP BY t.treatment_type
-ORDER BY revenue DESC;
+ORDER BY total_billed_amount DESC;
 
--- Chemotherapy, MRI, and X-Ray r the highest services that generate revenue
+-- Chemotherapy, MRI, and X-Ray have the highest billed amounts.
 
 -- Which patients have unpaid bills?
 
@@ -89,56 +89,81 @@ FROM billing
 WHERE payment_status = 'Pending' 
 OR payment_status = 'Failed';
 
--- seems like there are a ton of pending & failed payments, so it would be better to standarize one payment method 
+-- A considerable number of bills are marked Pending or Failed.
+-- Further analysis is needed to identify potential payment collection issues.
 
 -- which patients spent the most money?
 
-SELECT patient_id, SUM(amount) AS total_spent
+SELECT patient_id, SUM(amount) AS total_billed_amount
 FROM billing
 GROUP BY patient_id
-ORDER BY total_spent DESC;
+ORDER BY total_billed_amount DESC;
 
--- patient with id P012 spent by far the most (30k) 
--- even compared to 2nd spot P049 (23k) its still relatively higher
+-- Patient P012 has the highest total billed amount (approximately $30K),
+-- followed by P049 (approximately $23K).
 
--- how much unpaid revenue exist?
+-- What is the total billed amount marked Pending or Failed?
 SELECT SUM(amount) AS unpaid_amount
 FROM billing
 WHERE payment_status IN ('Pending', 'Failed');
--- the total unpaid amount is 377824.95
+-- Total billed amount marked Pending or Failed: $377,824.95.
 
--- how much paid revenue exist?
+-- What is the total billed amount marked Paid?
 SELECT SUM(amount) AS paid_amount
 FROM billing
 WHERE payment_status = 'Paid';
--- the total paid amount is 173424.90, which is less than half the unpaid amount
+-- Total billed amount marked Paid: $173,424.90.
 
 -- Payment method distribution
 SELECT payment_method, COUNT(*) AS total
 FROM billing
 GROUP BY payment_method
 ORDER BY total DESC;
--- the favourite paying method for patients is Credid card with total of 75, then Inusrance with 64, and lastly Cash with 61
+-- Credit Card is the most frequently used payment method (75 bills),
+-- followed by Insurance (64) and Cash (61).
 
--- which doctors have highest average treatment cost?
-SELECT a.doctor_id, avg(t.cost) AS AVG_Cost
-FROM treatments t
-JOIN appointments a
-ON t.appointment_id = a.appointment_id
-GROUP BY a.doctor_id
-ORDER BY AVG_Cost DESC;
--- The average cost between doctors is relatively close, the difference between D008 which is the highest with 3339 and 
--- D008 which is the highest with 3339 and  the lowest D009 with 2202 is almost 1k
+-- Payment status distribution by payment method
+SELECT
+    payment_method,
+    payment_status,
+    COUNT(*) AS total_bills,
+    SUM(amount) AS total_billed_amount
+FROM billing
+GROUP BY payment_method, payment_status
+ORDER BY payment_method, payment_status;
 
--- Appointments cancellation rate
+-- Which doctors have the highest average billed amount per appointment?
+SELECT
+    doctor_id,
+    AVG(appointment_billed_amount) AS avg_billed_amount_per_appointment
+FROM (
+    SELECT
+        a.appointment_id,
+        a.doctor_id,
+        SUM(b.amount) AS appointment_billed_amount
+    FROM appointments a
+    JOIN treatments t
+        ON a.appointment_id = t.appointment_id
+    JOIN billing b
+        ON t.treatment_id = b.treatment_id
+    GROUP BY a.appointment_id, a.doctor_id
+) AS appointment_totals
+GROUP BY doctor_id
+ORDER BY avg_billed_amount_per_appointment DESC;
+
+-- Doctor D008 recorded the highest average billed amount per appointment,
+-- followed by D007 and D006.
+
+-- Appointment status distribution
 SELECT status, COUNT(status) AS total
 FROM appointments
 GROUP BY status
 ORDER BY total DESC;
--- from 200 appointments only 46 were Completed, 51 Scheduled, 51 Cancelled, and 52 No-show
+-- Out of 200 appointments:
+-- 46 Completed, 51 Scheduled, 51 Cancelled, and 52 No-show.
 
 -- Which specialization generates most revenue?
-SELECT d.specialization, SUM(b.amount) AS total_revenue
+SELECT d.specialization, SUM(b.amount) AS total_billed_amount
 FROM doctors d
 JOIN appointments a
 ON d.doctor_id = a.doctor_id
@@ -147,30 +172,25 @@ ON a.appointment_id = t.appointment_id
 JOIN billing b
 ON t.treatment_id = b.treatment_id
 GROUP BY d.specialization
-ORDER BY total_revenue DESC;
--- It seems that Pediatrics generate the most revenue with 258k which is not far
---  from Dermatology whom make 202k, meanwhile Oncology is far behind both with 89k 
+ORDER BY total_billed_amount DESC;
+-- Pediatrics has the highest total billed amount (approximately $258K),
+-- followed by Dermatology ($202K) and Oncology ($89K).
 
 -- Most common reasons for visit
 SELECT reason_for_visit, COUNT(reason_for_visit) AS total
 FROM appointments
 GROUP BY reason_for_visit
 ORDER BY total DESC;
--- Emergency comes last by far for visiting reasons with 29 known that the closest reason is 
--- Follow-up with 41, reason is Follow-up with 41, and the most visiting reason is Checkup with 45 
+-- Checkup is the most common visit reason (45 appointments),
+-- followed by Follow-up (41) and Emergency (29).
 
 -- Gender distribution of patients
 SELECT gender, COUNT(gender) AS total
 FROM patients
 GROUP BY gender;
--- most our patients are males with 31 compared to femlaes (19)
+-- The patient dataset contains 31 males and 19 females.
 
 -- Age distribution
-SELECT
-patient_id,
-YEAR('2024-12-31') - YEAR(date_of_birth) AS age
-FROM patients;
-
 SELECT
 CASE
 	WHEN timestampdiff(YEAR, date_of_birth, '2024-12-31') < 18 THEN 'Under 18'
@@ -181,7 +201,8 @@ END AS age_group,
 COUNT(*) AS total
 FROM patients
 GROUP BY age_group;
--- all age groups r relatively close, coming in at the top is the 18-35 group with 20 person, then 50+ with 18, and lastly the 36-50 with 12 
+-- The 18-35 age group is the largest (20 patients),
+-- followed by 50+ (18) and 36-50 (12).
 
 
 -- Insurance provider usage
@@ -189,6 +210,19 @@ SELECT insurance_provider, COUNT(*) AS total
 FROM patients
 GROUP BY insurance_provider
 ORDER BY total DESC;
--- MedCare Plus comes first with 18 user, right behind it is WelnessCorp with 16 user
--- then comes a noticable drop for PulseSecure with 10 users, and lastly HealthIndia with only 6 users
+-- MedCare Plus is the most common insurance provider (18 patients),
+-- followed by WellnessCorp (16), PulseSecure (10), and HealthIndia (6).
+
+-- Overall billing summary by payment status
+SELECT
+    payment_status,
+    COUNT(*) AS total_bills,
+    SUM(amount) AS total_billed_amount,
+    ROUND(
+        SUM(amount) * 100.0 / (SELECT SUM(amount) FROM billing),
+        2
+    ) AS percentage_of_total
+FROM billing
+GROUP BY payment_status
+ORDER BY total_billed_amount DESC;
 
