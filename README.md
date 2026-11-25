@@ -2,7 +2,7 @@
 
 End-to-end healthcare analytics project focused on hospital financial performance, operational efficiency, billing behavior, and doctor performance.
 
-This project simulates a real-world data analyst workflow by working with raw hospital datasets, performing SQL analysis, Python exploratory data analysis, anomaly investigation, and building an interactive Power BI dashboard.
+This project simulates a real-world data analyst workflow by working with raw hospital datasets, performing SQL analysis, Python data cleaning and exploratory analysis, investigating unusual billing patterns, and building interactive Power BI dashboards.
 
 ---
 
@@ -10,27 +10,28 @@ This project simulates a real-world data analyst workflow by working with raw ho
 
 The goal of this project was to answer business-critical hospital management questions such as:
 
-- How much revenue is actually being collected?
-- Which treatment types generate the most revenue?
-- Which doctors generate the highest value?
-- How much operational waste exists due to cancellations and no-shows?
-- Are there anomalies in the hospital billing process?
+- How much of the total billed amount has actually been collected?
+- Which treatment types have the highest billed amounts?
+- Which doctors have the highest average billed amount per appointment?
+- What proportion of appointments are completed, cancelled, no-show, or scheduled?
+- Are there unusual patterns in the hospital billing process?
+- How are payment statuses distributed across different appointment statuses?
 
 ---
 
 ## Tools Used
 
-- **SQL (MySQL)** → Database creation, joins, business queries  
-- **Python** → Data cleaning and exploratory analysis  
-- **Pandas** → Data manipulation and merging  
-- **Matplotlib / Seaborn** → Visualizations and anomaly investigation  
-- **Power BI** → Interactive dashboard creation  
+- **SQL (MySQL)** → Database creation, joins, aggregations, and business queries
+- **Python** → Data cleaning and exploratory data analysis
+- **Pandas** → Data manipulation and merging
+- **Matplotlib / Seaborn** → Data visualization and exploratory analysis
+- **Power BI** → Interactive dashboards, DAX measures, and business insights
 
 ---
 
 ## Dataset
 
-Dataset contains 5 CSV files representing hospital operations:
+The dataset contains 5 CSV files representing hospital operations:
 
 - Patients
 - Doctors
@@ -38,19 +39,17 @@ Dataset contains 5 CSV files representing hospital operations:
 - Treatments
 - Billing
 
-Source:
-
-Dataset obtained from Kaggle public healthcare dataset.
+**Source:** Public healthcare dataset obtained from Kaggle.
 
 ---
 
 ## Project Workflow
 
-### 1. SQL Database Design
+### 1. SQL Database Design & Analysis
 
-Created relational database and imported all CSV files.
+Created a relational database and imported all five CSV files.
 
-Created 5 tables:
+Created five tables:
 
 - patients
 - doctors
@@ -63,10 +62,10 @@ Performed SQL analysis using joins, aggregations, and business queries.
 Example business questions:
 
 - Which doctors handle the most appointments?
-- Which treatment types generate the most revenue?
-- Which patients have unpaid bills?
-- Which specializations generate the highest revenue?
-- Which patients spent the most money?
+- Which treatment types have the highest billed amounts?
+- Which patients have bills that are not marked as paid?
+- Which specializations have the highest billed amounts?
+- Which patients have the highest total billed amounts?
 
 ---
 
@@ -78,9 +77,10 @@ Tasks:
 
 - Converted date columns to datetime
 - Standardized phone numbers as text
-- Created patient age column
+- Created a patient age column
 - Merged multiple tables for analysis
-- Created exploratory visualizations
+- Performed exploratory data analysis (EDA)
+- Created visualizations to identify trends and unusual patterns
 
 Libraries used:
 
@@ -92,125 +92,166 @@ import seaborn as sns
 
 ---
 
-### 3. Anomaly Investigation
+### 3. Billing Anomaly Investigation
 
-During analysis, a major anomaly was discovered.
+During the analysis, an unusual billing pattern was identified involving patient **P012**, who had the highest total billed amount in the dataset.
 
-Patient **P012** had the highest total spending in the entire dataset.
+Further examination revealed:
 
-However:
+- Most of P012's appointments were Cancelled or No-show.
+- Billing records were still associated with these appointments.
+- Billed amounts were recorded even though the appointments were not completed.
 
-- Most appointments were Cancelled or No-show
-- Billing records still existed for those appointments
-- Charges were still applied despite appointments not being completed
+### Billed Amount by Appointment Status
 
-Further investigation revealed:
+| Appointment Status | Billed Amount |
+| ------------------ | ------------: |
+| Cancelled          |      $152,044 |
+| No-show            |      $142,677 |
+| Scheduled          |      $132,426 |
+| Completed          |      $124,100 |
 
-### Revenue generated by appointment status
+**Key observation:**
 
-| Status | Revenue |
-|----------|----------|
-| Cancelled | $152,044 |
-| No-show | $142,677 |
-| Scheduled | $132,426 |
-| Completed | $124,100 |
+Cancelled appointments were associated with higher billed amounts ($152,044) than completed appointments ($124,100).
 
-Unexpected finding:
+This raised questions about the hospital's billing procedures.
 
-**Cancelled appointments were associated with higher billed amounts than completed appointments.**
+### Possible Explanations
 
-Possible explanation:
+- Invoices may be generated before services are delivered.
+- Charges may not be reversed after cancellations or no-shows.
+- Billing procedures may not adequately distinguish between completed and uncompleted appointments.
 
-- Billing system invoices patients before service delivery
-- Charges are not reversed after cancellations/no-shows
-- Potential billing process flaw
+### Potential Business Risks
 
-Business risk:
-
-- Inflated revenue reporting
-- Customer billing disputes
+- Inaccurate financial reporting
+- Patient billing disputes
 - Poor patient experience
+- Incorrect outstanding balance reporting
+
+**Note:** The available dataset identifies unusual billing patterns but does not contain sufficient transaction, refund, or reversal information to confirm a billing-system flaw. Further investigation would be required.
 
 ---
 
 ## Key Insights
 
-### Revenue Collection Problem
+### 1. Payment Collection Status
 
-- Total Revenue = $551,249
-- Paid Revenue = $173,424
-- Outstanding Revenue = $377,824
+- Total Billed Amount: Approximately $551,249
+- Paid Amount: Approximately $173,424
+- Amount Not Marked as Paid: Approximately $377,824
+- Collection Rate: 31.46%
 
-Only **32% of billed revenue was successfully collected**
+Only **31.46% of billed amounts were marked as Paid**, while the remaining **68.54% were marked as Pending or Failed**.
+
+This indicates a significant payment collection concern that warrants further investigation.
+
+*Note: Pending and Failed payments are not necessarily recoverable outstanding debt.*
 
 ---
 
-### Operational Inefficiency
+### 2. Appointment Outcomes
 
 Appointment distribution:
 
-- Completed = 23%
-- No-show = 26%
-- Cancelled = 25.5%
-- Scheduled = 25.5%
+| Appointment Status | Percentage |
+| ------------------ | ---------: |
+| Completed          |        23% |
+| No-show            |        26% |
+| Cancelled          |      25.5% |
+| Scheduled          |      25.5% |
 
-Only **23% of appointments were successfully completed**
+Only **23% of appointments were completed**.
 
----
+A further **51.5% were cancelled or resulted in no-shows**, while another **25.5% remained scheduled**.
 
-### Highest Revenue Treatments
-
-Top services:
-
-- Chemotherapy
-- MRI
-- X-Ray
-
-These services drive hospital revenue.
+This highlights opportunities to investigate appointment attendance, cancellations, and scheduling processes.
 
 ---
 
-### Doctor Performance
+### 3. Payment Status by Appointment Status
 
-Highest revenue per appointment:
+Analyzed the distribution of Paid, Pending, and Failed bills across appointment statuses.
 
-| Doctor | Revenue per Appointment |
-|----------|----------|
-| D008 | 3339 |
-| D007 | 3089 |
-| D006 | 2899 |
+Key observations:
 
-Doctor D008 recorded the highest billed revenue per appointment.
+- Cancelled appointments had an equal distribution of Pending, Paid, and Failed bills, with 17 bills in each category (33.33% each).
+- No-show appointments had 17 Failed, 18 Paid, and 17 Pending bills.
+- Completed appointments had 14 Paid bills out of 46 (30.43%).
+
+The equal payment-status distribution for cancelled appointments is an unusual pattern worth investigating, although it does not establish whether the distribution was intentional.
+
+---
+
+### 4. Highest Billed Treatments
+
+The treatments with the highest billed amounts were:
+
+| Treatment    | Billed Amount |
+| ------------ | ------------: |
+| Chemotherapy |         $129K |
+| MRI          |         $116K |
+| X-Ray        |         $111K |
+
+These treatments recorded the highest billed amounts among the analyzed treatment types.
+
+---
+
+### 5. Doctor Performance
+
+Doctors with the highest average billed amount per appointment:
+
+| Doctor | Billed Amount per Appointment |
+| ------ | ----------------------------: |
+| D008   |                        $3,339 |
+| D007   |                        $3,089 |
+| D006   |                        $2,899 |
+
+Doctor D008 recorded the highest average billed amount per appointment.
+
+This metric reflects average billed value, not doctor profitability or operational efficiency.
 
 ---
 
 ## Power BI Dashboard
 
-## Dashboard Preview
+The Power BI report contains two interactive dashboard pages.
 
-### Executive Dashboard
+### Dashboard 1: Hospital Overview
 
 Main dashboard showing:
 
-- Revenue KPIs
-- Appointment completion rate
-- Treatment revenue analysis
-- Revenue anomaly detection
-- Doctor performance metrics
+- Total Billed Revenue
+- Paid Revenue
+- Unpaid Billed Amount
+- Collection Rate
+- Appointment Status Distribution
+- Appointments Count by Doctor
+- Billed Revenue by Treatment Type
+- Paid vs. Unpaid Billed Amount
+- Revenue per Appointment by Doctor
 
 ![Dashboard Preview](dashboard.png)
 
----
+### Dashboard 2: Insights & Slicers
 
-### Insights & Interactive Filters
+Secondary dashboard page focused on deeper analysis and billing behavior.
 
-Secondary dashboard page for:
+Includes:
 
-- Key business findings
-- Interactive slicers for treatment type, payment method, and doctor analysis
-- Doctor workload vs revenue relationship
+- Key business findings and recommendations
+- Doctor Workload vs. Total Billed Revenue scatter plot
+- Payment Status Distribution by Appointment Status
+- Billed Amount by Appointment & Payment Status
+- Interactive slicers for:
+  - Doctor ID
+  - Treatment Type
+  - Payment Method
+    
+  ![Insights Page](insights.png)
 
-![Insights Page](insights.png)
+The slicers are synchronized across both dashboard pages, allowing users to explore the data interactively.
 
 ---
 
@@ -218,45 +259,43 @@ Secondary dashboard page for:
 
 Project files:
 
-- hospital_analysis.sql → SQL queries and database analysis
-- hospital_analysis.ipynb → Python data cleaning and exploratory analysis
-- hospital_dashboard.pbix → Interactive Power BI dashboard
-- dashboard.png → Power BI executive dashboard screenshot
-- insights.png → Power BI insights and slicers page screenshot
+- `hospital_analysis.sql` → SQL queries and database analysis
+- `hospital_analysis.ipynb` → Python data cleaning and exploratory analysis
+- `hospital_dashboard.pbix` → Interactive Power BI report
+- `dashboard.png` → Hospital Overview dashboard screenshot
+- `insights.png` → Insights & Slicers dashboard screenshot
 
 Dataset files:
 
-- patients.csv
-- doctors.csv
-- appointments.csv
-- treatments.csv
-- billing.csv
+- `patients.csv`
+- `doctors.csv`
+- `appointments.csv`
+- `treatments.csv`
+- `billing.csv`
 
 ---
 
-## Final Business Recommendations
+## Business Recommendations
 
-Based on analysis:
+### 1. Review Billing Procedures
 
-### Improve billing process
+Investigate billing procedures for cancelled and no-show appointments, including invoice generation, payment handling, and reversal policies.
 
-Investigate why cancelled and no-show appointments are still generating revenue.
+### 2. Improve Payment Collection
 
-### Improve revenue collection
+Review Pending and Failed payments to identify collection issues and opportunities to improve payment success rates.
 
-68% of billed revenue remains outstanding.
+### 3. Improve Appointment Attendance
 
-### Reduce operational waste
+Investigate the causes of cancellations and no-shows to identify opportunities to improve appointment attendance and scheduling.
 
-77% of appointments are not completed successfully.
+### 4. Analyze Doctor Performance
 
-### Focus on high-value services
+Examine high-performing doctors such as D008 to understand the factors contributing to their higher average billed amount per appointment.
 
-Chemotherapy, MRI, and X-Ray drive most revenue.
+### 5. Monitor High-Billing Treatments
 
-### Study doctor efficiency
-
-Investigate practices used by high-performing doctors.
+Prioritize monitoring of high-billing treatments such as Chemotherapy, MRI, and X-Ray to better understand their contribution to hospital billing.
 
 ---
 
@@ -264,7 +303,9 @@ Investigate practices used by high-performing doctors.
 
 End-to-End Data Analyst Portfolio Project
 
-Excel + SQL + Python + Power BI + Business Intelligence + Data Visualization
+**SQL + Python + Pandas + Power BI + Business Intelligence + Data Visualization**
+
+---
 
 ## Repository Structure
 
@@ -292,3 +333,4 @@ hospital-revenue-operations-analysis/
 │
 └── README.md
 ```
+
